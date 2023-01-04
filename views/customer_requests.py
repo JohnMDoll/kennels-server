@@ -6,10 +6,12 @@ CUSTOMERS = [
 ]
 
 def get_all_customers():
+    """docstring"""
     return CUSTOMERS
 
 # Function with a single parameter
 def get_single_customer(id):
+    """docstring"""
     # Variable to hold the found customer, if it exists
     requested_customer = None
 

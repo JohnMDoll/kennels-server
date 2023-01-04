@@ -12,10 +12,12 @@ LOCATIONS = [
 ]
 
 def get_all_locations():
+    """docstring"""
     return LOCATIONS
 
 # Function with a single parameter
 def get_single_location(id):
+    """docstring"""
     # Variable to hold the found location, if it exists
     requested_location = None
 

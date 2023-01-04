@@ -1,3 +1,7 @@
+    # This is a Docstring it should be at the beginning of all classes and functions
+    # It gives a description of the class or function
+"""Controls the functionality of any GET, PUT, POST, DELETE requests to the server"""
+
 ANIMALS = [
     {
         "id": 1,
@@ -24,10 +28,12 @@ ANIMALS = [
 
 
 def get_all_animals():
+    """docstring for get_all_animals. gets all animals"""
     return ANIMALS
 
 # Function with a single parameter
 def get_single_animal(id):
+    """docstring for get single animal. gets single animals from id"""
     # Variable to hold the found animal, if it exists
     requested_animal = None
 
@@ -40,3 +46,20 @@ def get_single_animal(id):
             requested_animal = animal
 
     return requested_animal
+
+def create_animal(animal):
+    """docstring for create animal. It posts animals"""
+    # Get the id value of the last animal in the list
+    max_id = ANIMALS[-1]["id"]
+
+    # Add 1 to whatever that number is
+    new_id = max_id + 1
+
+    # Add an `id` property to the animal dictionary
+    animal["id"] = new_id
+
+    # Add the animal dictionary to the list
+    ANIMALS.append(animal)
+
+    # Return the dictionary with `id` property added
+    return animal
