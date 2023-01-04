@@ -1,13 +1,41 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from views import get_all_animals
-
-
+from views import (
+    get_all_animals,
+    get_single_animal,
+    get_all_locations,
+    get_single_location,
+    get_single_employee,
+    get_all_employees,
+    get_all_customers,
+    get_single_customer,
+)
 # Here's a class. It inherits from another class.
 # For now, think of a class as a container for functions that
 # work together for a common purpose. In this case, that
 # common purpose is to respond to HTTP requests from a client.
 class HandleRequests(BaseHTTPRequestHandler):
+    def parse_url(self, path):
+        # Just like splitting a string in JavaScript. If the
+        # path is "/animals/1", the resulting list will
+        # have "" at index 0, "animals" at index 1, and "1"
+        # at index 2.
+        path_params = path.split("/")
+        resource = path_params[1]
+        id = None
+
+        # Try to get the item at index 2
+        try:
+            # Convert the string "1" to the integer 1
+            # This is the new parseInt()
+            id = int(path_params[2])
+        except IndexError:
+            pass  # No route parameter exists: /animals
+        except ValueError:
+            pass  # Request had trailing slash: /animals/
+
+        return (resource, id)  # This is a tuple
+
     # This is a Docstring it should be at the beginning of all classes and functions
     # It gives a description of the class or function
     """Controls the functionality of any GET, PUT, POST, DELETE requests to the server"""
@@ -24,11 +52,36 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Your new console.log() that outputs to the terminal
         print(self.path)
 
-        # It's an if..else statement
-        if self.path == "/animals":
-            response = get_all_animals()
-        else:
-            response = []
+        # Parse the URL and capture the tuple that is returned
+        (resource, id) = self.parse_url(self.path)
+
+        if resource == "animals":
+            if id is not None:
+                response = get_single_animal(id)
+
+            else:
+                response = get_all_animals()
+
+        elif resource == "locations":
+            if id is not None:
+                response = get_single_location(id)
+
+            else:
+                response = get_all_locations()
+
+        elif resource == "customers":
+            if id is not None:
+                response = get_single_customer(id)
+
+            else:
+                response = get_all_customers()
+
+        elif resource == "employees":
+            if id is not None:
+                response = get_single_employee(id)
+
+            else:
+                response = get_all_employees()
 
         # Send a JSON formatted string as a response
         self.wfile.write(json.dumps(response).encode())
