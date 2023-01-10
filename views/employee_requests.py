@@ -72,7 +72,6 @@ def get_single_employee(id):
 
         return employee.__dict__
 
-
 def create_employee(employee):
     """docstring for create employee. It posts employees"""
     # Get the id value of the last employee in the list
