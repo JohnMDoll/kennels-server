@@ -63,7 +63,6 @@ class HandleRequests(BaseHTTPRequestHandler):
     def do_GET(self):
         """Handles GET requests to the server"""
         # Set the response code to 'Ok'
-        self._set_headers(200)
 
         # Your new console.log() that outputs to the terminal
         print(self.path)
@@ -81,7 +80,8 @@ class HandleRequests(BaseHTTPRequestHandler):
         elif resource == "locations":
             if id is not None:
                 response = get_single_location(id)
-
+                if response is None:
+                    self._set_headers(404)
             else:
                 response = get_all_locations()
 
@@ -98,7 +98,8 @@ class HandleRequests(BaseHTTPRequestHandler):
 
             else:
                 response = get_all_employees()
-
+        if response is not None:
+            self._set_headers(200)
         # Send a JSON formatted string as a response
         self.wfile.write(json.dumps(response).encode())
 
@@ -153,7 +154,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Parse the URL
         (resource, id) = self.parse_url(self.path)
 
-        # Delete a single animal from the list
+        # Update a single animal from the list
         if resource == "animals":
             update_animal(id, post_body)
         if resource == "locations":
@@ -162,7 +163,7 @@ class HandleRequests(BaseHTTPRequestHandler):
             update_employee(id, post_body)
         if resource == "customers":
             update_customer(id, post_body)
-        # Encode the new animal and send in response
+        # Encode the new item and send in response
         self.wfile.write("".encode())
 
     def do_DELETE(self):

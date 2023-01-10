@@ -1,29 +1,77 @@
-EMPLOYEES = [
-    {
-        "id": 1,
-        "name": "Jenna Solis"
-    }
-]
+import sqlite3
+import json
+from models import Employee
+
+EMPLOYEES = [{"id": 1, "name": "Jenna Solis"}]
+
 
 def get_all_employees():
-    """docstring"""
-    return EMPLOYEES
+    """given code to fetch all employees from sql database"""
+    # Open a connection to the database
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        # Just use these. It's a Black Box.
+        conn.row_factory = sqlite3.Row
+        db_cursor = conn.cursor()
+
+        # Write the SQL query to get the information you want
+        db_cursor.execute(
+            """
+        SELECT
+            *
+        FROM employee
+        """
+        )
+
+        # Initialize an empty list to hold all employee representations
+        employees = []
+
+        # Convert rows of data into a Python list
+        dataset = db_cursor.fetchall()
+
+        # Iterate list of data returned from database
+        for row in dataset:
+            # Create an employee instance from the current row.
+            # Note that the database fields are specified in
+            # exact order of the parameters defined in the
+            # Employee class above.
+            employee = Employee(
+                row["id"], row["name"], row["address"], row["location_id"]
+            )
+
+            employees.append(employee.__dict__)
+
+    return employees
+
 
 # Function with a single parameter
 def get_single_employee(id):
-    """docstring"""
-    # Variable to hold the found employee, if it exists
-    requested_employee = None
+    """given code to fetch single employee from sql database given id"""
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        conn.row_factory = sqlite3.Row
+        db_cursor = conn.cursor()
 
-    # Iterate the ANIMALS list above. Very similar to the
-    # for..of loops you used in JavaScript.
-    for employee in EMPLOYEES:
-        # Dictionaries in Python use [] notation to find a key
-        # instead of the dot notation that JavaScript used.
-        if employee["id"] == id:
-            requested_employee = employee
+        # Use a ? parameter to inject a variable's value
+        # into the SQL statement.
+        db_cursor.execute(
+            """
+        SELECT
+            *
+        FROM employee a
+        WHERE a.id = ?
+        """,
+            (id,),
+        )
 
-    return requested_employee
+        # Load the single result into memory
+        data = db_cursor.fetchone()
+
+        # Create an employee instance from the current row
+        employee = Employee(
+            data["id"], data["name"], data["address"], data["location_id"]
+        )
+
+        return employee.__dict__
+
 
 def create_employee(employee):
     """docstring for create employee. It posts employees"""
@@ -42,6 +90,7 @@ def create_employee(employee):
     # Return the dictionary with `id` property added
     return employee
 
+
 def delete_employee(id):
     """deletes employee with matching employee Id"""
     # Initial -1 value for employee index, in case one isn't found
@@ -57,6 +106,7 @@ def delete_employee(id):
     # If the employee was found, use pop(int) to remove it from list
     if employee_index >= 0:
         EMPLOYEES.pop(employee_index)
+
 
 def update_employee(id, new_employee):
     """adds new employee to list"""
