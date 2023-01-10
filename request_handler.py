@@ -1,8 +1,11 @@
 import json
+from urllib.parse import urlparse, parse_qs
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from views import (
     get_all_animals,
     get_single_animal,
+    get_animals_by_location,
+    get_animals_by_status,
     create_animal,
     delete_animal,
     update_animal,
@@ -13,11 +16,13 @@ from views import (
     update_location,
     get_single_employee,
     get_all_employees,
+    get_employees_by_location,
     create_employee,
     delete_employee,
     update_employee,
     get_all_customers,
     get_single_customer,
+    get_customers_by_email,
     create_customer,
     delete_customer,
     update_customer
@@ -28,29 +33,24 @@ from views import (
 # work together for a common purpose. In this case, that
 # common purpose is to respond to HTTP requests from a client.
 class HandleRequests(BaseHTTPRequestHandler):
-    """docstring"""
+    """handles and fetch calls from client"""
 
     def parse_url(self, path):
-        """this wanted a docstring too"""
-        # Just like splitting a string in JavaScript. If the
-        # path is "/animals/1", the resulting list will
-        # have "" at index 0, "animals" at index 1, and "1"
-        # at index 2.
-        path_params = path.split("/")
+        """Parse the url into the resource and id"""
+        parsed_url = urlparse(path)
+        path_params = parsed_url.path.split('/')  # ['', 'animals', 1]
         resource = path_params[1]
-        id = None
 
-        # Try to get the item at index 2
+        if parsed_url.query:
+            query = parse_qs(parsed_url.query)
+            return (resource, query)
+
+        pk = None
         try:
-            # Convert the string "1" to the integer 1
-            # This is the new parseInt()
-            id = int(path_params[2])
-        except IndexError:
-            pass  # No route parameter exists: /animals
-        except ValueError:
-            pass  # Request had trailing slash: /animals/
-
-        return (resource, id)  # This is a tuple
+            pk = int(path_params[2])
+        except (IndexError, ValueError):
+            pass
+        return (resource, pk)
 
     # This is a Docstring it should be at the beginning of all classes and functions
     # It gives a description of the class or function
@@ -61,46 +61,52 @@ class HandleRequests(BaseHTTPRequestHandler):
     # Here's a method on the class that overrides the parent's method.
     # It handles any GET request.
     def do_GET(self):
-        """Handles GET requests to the server"""
-        # Set the response code to 'Ok'
+        """handles requests for data from sql db"""
+        self._set_headers(200)
 
-        # Your new console.log() that outputs to the terminal
-        print(self.path)
+        response = {}
 
-        # Parse the URL and capture the tuple that is returned
-        (resource, id) = self.parse_url(self.path)
+        # Parse URL and store entire tuple in a variable
+        parsed = self.parse_url(self.path)
 
-        if resource == "animals":
-            if id is not None:
-                response = get_single_animal(id)
+        # If the path does not include a query parameter, continue with the original if block
+        if '?' not in self.path:
+            ( resource, id ) = parsed
 
-            else:
-                response = get_all_animals()
+            if resource == "animals":
+                if id is not None:
+                    response = f"{get_single_animal(id)}"
+                else:
+                    response = f"{get_all_animals()}"
+            elif resource == "customers":
+                if id is not None:
+                    response = f"{get_single_customer(id)}"
+                else:
+                    response = f"{get_all_customers()}"
+            elif resource == "locations":
+                if id is not None:
+                    response = f"{get_single_location(id)}"
+                else:
+                    response = f"{get_all_locations()}"
+            elif resource == "employees":
+                if id is not None:
+                    response = f"{get_single_employee(id)}"
+                else:
+                    response = f"{get_all_employees()}"
 
-        elif resource == "locations":
-            if id is not None:
-                response = get_single_location(id)
-                if response is None:
-                    self._set_headers(404)
-            else:
-                response = get_all_locations()
+        else: # There is a ? in the path, run the query param functions
+            (resource, query) = parsed
 
-        elif resource == "customers":
-            if id is not None:
-                response = get_single_customer(id)
+            # see if the query dictionary has an email key
+            if query.get('email') and resource == 'customers':
+                response = get_customers_by_email(query['email'][0])
+            elif query.get('location_id') and resource == 'animals':
+                response = get_animals_by_location(query['location_id'][0])
+            elif query.get('location_id') and resource == 'employees':
+                response = get_employees_by_location(query['location_id'][0])
+            elif query.get('status') and resource == 'animals':
+                response = get_animals_by_status(query['status'][0])
 
-            else:
-                response = get_all_customers()
-
-        elif resource == "employees":
-            if id is not None:
-                response = get_single_employee(id)
-
-            else:
-                response = get_all_employees()
-        if response is not None:
-            self._set_headers(200)
-        # Send a JSON formatted string as a response
         self.wfile.write(json.dumps(response).encode())
 
     # Here's a method on the class that overrides the parent's method.
