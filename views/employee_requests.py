@@ -1,6 +1,6 @@
 import sqlite3
 import json
-from models import Employee
+from models import Employee, Location
 
 EMPLOYEES = [{"id": 1, "name": "Jenna Solis"}]
 
@@ -17,8 +17,9 @@ def get_all_employees():
         db_cursor.execute(
             """
         SELECT
-            *
-        FROM employee
+            e.*
+        FROM employee e
+        JOIN Location l ON l.id = e.location_id
         """
         )
 
@@ -37,6 +38,9 @@ def get_all_employees():
             employee = Employee(
                 row["id"], row["name"], row["address"], row["location_id"]
             )
+            location = Location(row["id"], row["name"], row["address"])
+
+            employee.location = location.__dict__
 
             employees.append(employee.__dict__)
 
@@ -72,6 +76,7 @@ def get_single_employee(id):
 
         return employee.__dict__
 
+
 def get_employees_by_location(location_id):
     """retrieves employee data from sql db from given location_id"""
     with sqlite3.connect("./kennel.sqlite3") as conn:
@@ -79,12 +84,15 @@ def get_employees_by_location(location_id):
         db_cursor = conn.cursor()
 
         # Write the SQL query to get the information you want
-        db_cursor.execute("""
+        db_cursor.execute(
+            """
         select
             *
         from Employee e
         WHERE e.location_id = ?
-        """, ( location_id, ))
+        """,
+            (location_id,),
+        )
 
         employees = []
         dataset = db_cursor.fetchall()
@@ -96,6 +104,7 @@ def get_employees_by_location(location_id):
 
             employees.append(employee.__dict__)
     return employees
+
 
 def create_employee(employee):
     """docstring for create employee. It posts employees"""
@@ -133,11 +142,34 @@ def delete_employee(id):
 
 
 def update_employee(id, new_employee):
-    """adds new employee to list"""
-    # Iterate the EMPLOYEES list, but use enumerate() so that
-    # you can access the index value of each item.
-    for index, employee in enumerate(EMPLOYEES):
-        if employee["id"] == id:
-            # Found the employee. Update the value.
-            EMPLOYEES[index] = new_employee
-            break
+    """overwrites db employee"""
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+
+        db_cursor.execute(
+            """
+        UPDATE Employee
+            SET
+                name = ?,
+                address = ?,
+                location_id = ?
+        WHERE id = ?
+        """,
+            (
+                new_employee["name"],
+                new_employee["address"],
+                new_employee["locationId"],
+                id,
+            ),
+        )
+
+        # Were any rows affected?
+        # Did the client send an `id` that exists?
+        rows_affected = db_cursor.rowcount
+
+    if rows_affected == 0:
+        # Forces 404 response by main module
+        return False
+    else:
+        # Forces 204 response by main module
+        return True

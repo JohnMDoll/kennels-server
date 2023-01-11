@@ -2,12 +2,8 @@ import sqlite3
 import json
 from models import Customer
 
-CUSTOMERS = [
-    {
-        "id": 1,
-        "name": "Ryan Tanay"
-    }
-]
+CUSTOMERS = [{"id": 1, "name": "Ryan Tanay"}]
+
 
 def get_all_customers():
     """given code to fetch all customers from sql database"""
@@ -38,9 +34,7 @@ def get_all_customers():
             # Note that the database fields are specified in
             # exact order of the parameters defined in the
             # Customer class above.
-            customer = Customer(
-                row["id"], row["name"], row["address"]
-                )
+            customer = Customer(row["id"], row["name"], row["address"])
 
             customers.append(customer.__dict__)
 
@@ -70,11 +64,10 @@ def get_single_customer(id):
         data = db_cursor.fetchone()
 
         # Create an customer instance from the current row
-        customer = Customer(
-            data["id"], data["name"], data["address"]
-        )
+        customer = Customer(data["id"], data["name"], data["address"])
 
         return customer.__dict__
+
 
 def get_customers_by_email(email):
     """retrieves customer data from sql db from given email address"""
@@ -83,7 +76,8 @@ def get_customers_by_email(email):
         db_cursor = conn.cursor()
 
         # Write the SQL query to get the information you want
-        db_cursor.execute("""
+        db_cursor.execute(
+            """
         select
             c.id,
             c.name,
@@ -92,16 +86,21 @@ def get_customers_by_email(email):
             c.password
         from Customer c
         WHERE c.email like ?
-        """, ( email, ))
+        """,
+            (email,),
+        )
 
         customers = []
         dataset = db_cursor.fetchall()
 
         for row in dataset:
-            customer = Customer(row['id'], row['name'], row['address'], row['email'] , row['password'])
+            customer = Customer(
+                row["id"], row["name"], row["address"], row["email"], row["password"]
+            )
             customers.append(customer.__dict__)
 
     return customers
+
 
 def create_customer(customer):
     """docstring for create customer. It posts customers"""
@@ -120,6 +119,7 @@ def create_customer(customer):
     # Return the dictionary with `id` property added
     return customer
 
+
 def delete_customer(id):
     """deletes customer with matching customer Id"""
     # Initial -1 value for customer index, in case one isn't found
@@ -136,12 +136,38 @@ def delete_customer(id):
     if customer_index >= 0:
         CUSTOMERS.pop(customer_index)
 
+
 def update_customer(id, new_customer):
-    """adds new customer to list"""
-    # Iterate the CUSTOMERS list, but use enumerate() so that
-    # you can access the index value of each item.
-    for index, customer in enumerate(CUSTOMERS):
-        if customer["id"] == id:
-            # Found the customer. Update the value.
-            CUSTOMERS[index] = new_customer
-            break
+    """adds updated customer to list"""
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+
+        db_cursor.execute(
+            """
+        UPDATE Customer
+            SET
+                name = ?,
+                address = ?,
+                email = ?,
+                password = ?
+        WHERE id = ?
+        """,
+            (
+                new_customer["name"],
+                new_customer["address"],
+                new_customer["email"],
+                new_customer["password"],
+                id,
+            ),
+        )
+
+        # Were any rows affected?
+        # Did the client send an `id` that exists?
+        rows_affected = db_cursor.rowcount
+
+    if rows_affected == 0:
+        # Forces 404 response by main module
+        return False
+    else:
+        # Forces 204 response by main module
+        return True

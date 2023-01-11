@@ -3,17 +3,10 @@ import json
 from models import Location
 
 LOCATIONS = [
-    {
-        "id": 1,
-        "name": "Nashville North",
-        "address": "8422 Johnson Pike"
-    },
-    {
-        "id": 2,
-        "name": "Nashville South",
-        "address": "209 Emory Drive"
-    }
+    {"id": 1, "name": "Nashville North", "address": "8422 Johnson Pike"},
+    {"id": 2, "name": "Nashville South", "address": "209 Emory Drive"},
 ]
+
 
 def get_all_locations():
     """given code to fetch all locations from sql database"""
@@ -44,9 +37,7 @@ def get_all_locations():
             # Note that the database fields are specified in
             # exact order of the parameters defined in the
             # Location class above.
-            location = Location(
-                row["id"], row["name"], row["address"]
-                )
+            location = Location(row["id"], row["name"], row["address"])
 
             locations.append(location.__dict__)
 
@@ -76,11 +67,10 @@ def get_single_location(id):
         data = db_cursor.fetchone()
 
         # Create an location instance from the current row
-        location = Location(
-            data["id"], data["name"], data["address"]
-        )
+        location = Location(data["id"], data["name"], data["address"])
 
         return location.__dict__
+
 
 def create_location(location):
     """docstring for create location. It posts locations"""
@@ -99,6 +89,7 @@ def create_location(location):
     # Return the dictionary with `id` property added
     return location
 
+
 def delete_location(id):
     """deletes location with matching location Id"""
     # Initial -1 value for location index, in case one isn't found
@@ -115,12 +106,34 @@ def delete_location(id):
     if location_index >= 0:
         LOCATIONS.pop(location_index)
 
+
 def update_location(id, new_location):
-    """adds new location to list"""
-    # Iterate the locationS list, but use enumerate() so that
-    # you can access the index value of each item.
-    for index, location in enumerate(LOCATIONS):
-        if location["id"] == id:
-            # Found the location. Update the value.
-            LOCATIONS[index] = new_location
-            break
+    """adds updated location to list"""
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        db_cursor = conn.cursor()
+
+        db_cursor.execute(
+            """
+        UPDATE Location
+            SET
+                name = ?,
+                address = ?
+        WHERE id = ?
+        """,
+            (
+                new_location["name"],
+                new_location["address"],
+                id,
+            ),
+        )
+
+        # Were any rows affected?
+        # Did the client send an `id` that exists?
+        rows_affected = db_cursor.rowcount
+
+    if rows_affected == 0:
+        # Forces 404 response by main module
+        return False
+    else:
+        # Forces 204 response by main module
+        return True
