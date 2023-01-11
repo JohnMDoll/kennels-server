@@ -34,7 +34,7 @@ ANIMALS = [
 ]
 
 
-def get_all_animals():
+def get_all_animals(query_params):
     """given code to fetch all animals from sql database"""
     # Open a connection to the database
     with sqlite3.connect("./kennel.sqlite3") as conn:
@@ -42,51 +42,61 @@ def get_all_animals():
         conn.row_factory = sqlite3.Row
         db_cursor = conn.cursor()
 
-        # Write the SQL query to get the information you want
-        db_cursor.execute(
-            """
-        SELECT
-            a.id,
-            a.name,
-            a.breed,
-            a.status,
-            a.location_id,
-            a.customer_id,
-            l.name location_name,
-            l.address location_address,
-            c.name customer_name,
-            c.address customer_address
-        FROM Animal a
-        JOIN Location l ON l.id = a.location_id
-        JOIN Customer c ON c.id = a.customer_id
-        """
-        )
+        sort_by = ""
 
-        # Initialize an empty list to hold all animal representations
-        animals = []
+    if len(query_params) != 0:
+        param = query_params[0]
+        [qs_key, qs_value] = param.split("=")
 
-        # Convert rows of data into a Python list
-        dataset = db_cursor.fetchall()
+        if qs_key == "_sortBy":
+            if qs_value == 'location':
+                sort_by = " ORDER BY location_id"
 
-        # Iterate list of data returned from database
-        for row in dataset:
+    sql_to_execute = f"""
+    SELECT
+        a.id,
+        a.name,
+        a.breed,
+        a.status,
+        a.location_id,
+        a.customer_id,
+        l.name location_name,
+        l.address location_address,
+        c.name customer_name,
+        c.address customer_address
+    FROM Animal a
+    JOIN Location l ON l.id = a.location_id
+    JOIN Customer c ON c.id = a.customer_id
+    {sort_by}"""
 
-            # Create an animal instance from the current row
-            animal = Animal(row['id'], row['name'], row['breed'], row['status'],
-                            row['location_id'], row['customer_id'])
+    # Execute SQL written above
+    db_cursor.execute( sql_to_execute )
 
-            # Create a Location instance from the current row
-            location = Location(row['location_id'], row['location_name'], row['location_address'])
+    # Initialize an empty list to hold all animal representations
+    animals = []
 
-            #Create a customer instance from the current row
-            customer = Customer(row["customer_id"], row["customer_name"], row["customer_address"])
+    # Convert rows of data into a Python list
+    dataset = db_cursor.fetchall()
 
-            # Add the dictionary representation of the location to the animal
-            animal.location = location.__dict__
-            animal.customer = customer.__dict__
+    # Iterate list of data returned from database
+    for row in dataset:
 
-            # Add the dictionary representation of the animal to the list
-            animals.append(animal.__dict__)
+        # Create an animal instance from the current row
+        animal = Animal(row['id'], row['name'], row['breed'], row['status'],
+                        row['location_id'], row['customer_id'])
+
+        # Create a Location instance from the current row
+        location = Location(row['location_id'], row['location_name'], row['location_address'])
+
+        #Create a customer instance from the current row
+        customer = Customer(row["customer_id"], row["customer_name"], row["customer_address"])
+
+        # Add the dictionary representation of the location to the animal
+        animal.location = location.__dict__
+        animal.customer = customer.__dict__
+
+        # Add the dictionary representation of the animal to the list
+        animals.append(animal.__dict__)
 
     return animals
 
