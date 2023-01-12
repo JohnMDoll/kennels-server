@@ -75,4 +75,10 @@ SELECT
 FROM Animal a
 Left JOIN Location l ON l.id = a.location_id 
 Left JOIN Customer c ON c.id = a.customer_id
-	
+-- Why does belore return 1 row/location if GROUP BY isn't included?
+SELECT
+		location.*,
+		COUNT(*) as animals
+	FROM location
+	JOIN Animal ON location.id = location_id
+	GROUP BY location.id HAVING location.id = 1

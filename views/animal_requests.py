@@ -1,10 +1,5 @@
 import sqlite3
-import json
 from models import Animal, Location, Customer
-
-# This is a Docstring it should be at the beginning of all classes and functions
-# It gives a description of the class or function
-"""Controls the functionality of any GET, PUT, POST, DELETE requests to the server"""
 
 ANIMALS = [
     {
@@ -43,14 +38,23 @@ def get_all_animals(query_params):
         db_cursor = conn.cursor()
 
         sort_by = ""
+        filter_by = ""
 
     if len(query_params) != 0:
         param = query_params[0]
         [qs_key, qs_value] = param.split("=")
 
         if qs_key == "_sortBy":
-            if qs_value == 'location':
-                sort_by = " ORDER BY location_id"
+            if qs_value == 'location' or qs_value == 'customer':
+                sort_by = f' ORDER BY {qs_value}_id'
+            elif qs_value == 'customer':
+                sort_by = " ORDER BY customer_id"
+            elif qs_value == 'status':
+                sort_by = " ORDER BY status"
+        if qs_key == "locationId":
+            filter_by = f" WHERE a.location_id = {qs_value}"
+        elif qs_key == "status":
+            filter_by = f" WHERE a.status LIKE '{qs_value}'"
 
     sql_to_execute = f"""
     SELECT
@@ -67,6 +71,7 @@ def get_all_animals(query_params):
     FROM Animal a
     JOIN Location l ON l.id = a.location_id
     JOIN Customer c ON c.id = a.customer_id
+    {filter_by}
     {sort_by}"""
 
     # Execute SQL written above
