@@ -82,3 +82,51 @@ SELECT
 	FROM location
 	JOIN Animal ON location.id = location_id
 	GROUP BY location.id HAVING location.id = 1
+
+CREATE TABLE employee_animals (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    employee_id INTEGER NOT NULL,
+    animal_id INTEGER NOT NULL,
+    FOREIGN KEY (employee_id) REFERENCES employees(id),
+    FOREIGN KEY (animal_id) REFERENCES animals(id)
+);
+INSERT INTO employee_animals (employee_id, animal_id)
+SELECT e1.id, a1.id
+FROM employees e1
+JOIN animals a1 ON e1.location_id = a1.location_id
+JOIN employees e2 ON e1.location_id = e2.location_id
+JOIN animals a2 ON a1.location_id = a2.location_id
+WHERE e1.id <> e2.id
+AND a1.id <> a2.id;
+
+WITH employee_table AS (SELECT id, location_id FROM employee),
+    animal_table AS (SELECT id, location_id FROM animal)
+INSERT INTO employee_animals ( employee_id, animal_id)
+SELECT employee_table.id, animal_table.id
+FROM employee_table
+JOIN animal_table ON employee_table.location_id = animal_table.location_id
+WHERE employee_table.id <> animal_table.id;
+
+DELETE FROM employee_animals
+WHERE id = 16
+
+SELECT
+            e.*,
+            l.name location_name,
+            l.address as location_address,
+			a.name as animal_name,
+			a.id as animal_table_id
+		FROM employee e
+        JOIN Location l ON l.id = e.location_id
+        JOIN employee_animals ea ON ea.employee_id = e.id
+		JOIN Animal a ON animal_table_id = ea.animal_id
+        WHERE e.id = 2
+
+SELECT
+	location.*,
+	COUNT(*) as animals,
+	animal.name
+FROM location
+JOIN Animal ON location.id = location_id
+GROUP BY location.id
+HAVING location.id = 1

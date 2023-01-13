@@ -1,6 +1,5 @@
 import sqlite3
-import json
-from models import Employee, Location
+from models import Employee, Location, Animal
 
 EMPLOYEES = [{"id": 1, "name": "Jenna Solis"}]
 
@@ -17,7 +16,9 @@ def get_all_employees():
         db_cursor.execute(
             """
         SELECT
-            e.*
+            e.*,
+            l.name location_name,
+            l.address as location_address
         FROM employee e
         JOIN Location l ON l.id = e.location_id
         """
@@ -36,9 +37,9 @@ def get_all_employees():
             # exact order of the parameters defined in the
             # Employee class above.
             employee = Employee(
-                row["id"], row["name"], row["address"], row["location_id"]
+                row["id"], row["name"], row["address"], row["location_id"], None, None
             )
-            location = Location(row["id"], row["name"], row["address"])
+            location = Location(row["id"], row["location_name"], row["location_address"])
 
             employee.location = location.__dict__
 
@@ -59,21 +60,42 @@ def get_single_employee(id):
         db_cursor.execute(
             """
         SELECT
-            *
-        FROM employee a
-        WHERE a.id = ?
+            e.*,
+            l.name location_name,
+            l.address as location_address,
+			a.name as animal,
+            a.breed,
+            a.status,
+            a.location_id,
+            a.customer_id customer_id,
+			a.id as animal_table_id
+		FROM employee e
+        JOIN Location l ON l.id = e.location_id
+        JOIN employee_animals ea ON ea.employee_id = e.id
+		JOIN Animal a ON animal_table_id = ea.animal_id
+        WHERE e.id = ?
         """,
             (id,),
         )
-
+        employee = None
+        employee_animals = []
         # Load the single result into memory
-        data = db_cursor.fetchone()
+        dataset = db_cursor.fetchall()
+        for data in dataset:
+            if employee is None:
+                employee = Employee(
+                        data["id"], data["name"], data["address"], data["location_id"], None, None
+                    )
+                location = Location(
+                    data["id"], data["location_name"], data["location_address"]
+                )
+                employee.location = location.__dict__
+            if data["animal"] is not None:
+                animal = Animal(data['animal_table_id'], data['animal'], data['breed'], data['status'], data['location_id'], data['customer_id'])
+                employee_animals.append(animal.__dict__)
 
-        # Create an employee instance from the current row
-        employee = Employee(
-            data["id"], data["name"], data["address"], data["location_id"]
-        )
-
+        employee.animals = employee_animals
+        print(employee)
         return employee.__dict__
 
 
@@ -99,7 +121,7 @@ def get_employees_by_location(location_id):
 
         for row in dataset:
             employee = Employee(
-                row["id"], row["name"], row["address"], row["location_id"]
+                row["id"], row["name"], row["address"], row["location_id"], None, None
             )
 
             employees.append(employee.__dict__)

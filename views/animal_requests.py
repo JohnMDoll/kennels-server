@@ -47,10 +47,10 @@ def get_all_animals(query_params):
         if qs_key == "_sortBy":
             if qs_value == 'location' or qs_value == 'customer':
                 sort_by = f' ORDER BY {qs_value}_id'
-            elif qs_value == 'customer':
-                sort_by = " ORDER BY customer_id"
-            elif qs_value == 'status':
-                sort_by = " ORDER BY status"
+            # elif qs_value == 'customer':
+            #     sort_by = " ORDER BY customer_id"
+            elif qs_value == 'status' or qs_value == 'name':
+                sort_by = f" ORDER BY a.{qs_value}"
         if qs_key == "locationId":
             filter_by = f" WHERE a.location_id = {qs_value}"
         elif qs_key == "status":
@@ -123,8 +123,14 @@ def get_single_animal(id):
             a.breed,
             a.status,
             a.location_id,
-            a.customer_id
-        FROM animal a
+            a.customer_id,
+            l.name location_name,
+            l.address location_address,
+            c.name customer_name,
+            c.address customer_address
+        FROM Animal a
+        JOIN Location l ON l.id = a.location_id
+        JOIN Customer c ON c.id = a.customer_id
         WHERE a.id = ?
         """,
             (id,),
@@ -142,6 +148,14 @@ def get_single_animal(id):
             data["location_id"],
             data["customer_id"],
         )
+        location = Location(
+            data['location_id'], data['location_name'], data['location_address']
+            )
+        customer = Customer(
+            data["customer_id"], data["customer_name"], data["customer_address"]
+            )
+        animal.location = location.__dict__
+        animal.customer = customer.__dict__
 
         return animal.__dict__
 
